@@ -107,6 +107,19 @@ class Validator {
 
     return normalStock + promotionStock;
   }
+
+  static validateYesNoInput(input) {
+    if (!input || !input.trim()) {
+      throw new Error(ERROR_MESSAGES.EMPTY_INPUT);
+    }
+
+    const upperInput = input.trim().toUpperCase();
+    if (upperInput !== 'Y' && upperInput !== 'N') {
+      throw new Error(ERROR_MESSAGES.INVALID_YES_NO);
+    }
+
+    return upperInput === 'Y';
+  }
 }
 
 export default Validator;
