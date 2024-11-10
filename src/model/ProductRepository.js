@@ -1,5 +1,6 @@
 //@ts-check
 
+import { ERROR_MESSAGES } from '../constants/errorMessages.js';
 import Product from './Products.js';
 
 class ProductRepository {
@@ -51,9 +52,15 @@ class ProductRepository {
     const product = isPromotion
       ? this.findPromotionProduct(name)
       : this.findNormalProduct(name);
-    if (!product || product.quantity < quantity) {
-      throw new Error('[ERROR] 상품의 재고가 부족합니다.');
+
+    if (!product) {
+      throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND);
     }
+
+    if (product.quantity < quantity) {
+      throw new Error(ERROR_MESSAGES.INSUFFICIENT_STOCK);
+    }
+
     product.quantity -= quantity;
   }
 }

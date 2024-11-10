@@ -3,6 +3,7 @@
 import fileReader from '../fileReader/fileReader.js';
 import outputView from '../views/outputView/OutputView.js';
 import ProductRepository from '../model/ProductRepository.js';
+import { ERROR_MESSAGES } from '../constants/errorMessages.js';
 
 class ProductService {
   #productRepository;
@@ -81,7 +82,7 @@ class ProductService {
     if (quantity <= 0) return;
 
     if (!normalProduct) {
-      throw new Error('[ERROR] 상품의 재고가 부족합니다.');
+      throw new Error(ERROR_MESSAGES.INSUFFICIENT_STOCK);
     }
 
     normalProduct.quantity -= quantity;

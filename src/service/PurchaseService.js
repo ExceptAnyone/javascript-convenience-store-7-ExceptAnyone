@@ -1,6 +1,6 @@
 //@ts-check
 
-import inputView from '../views/inputView/InputView.js';
+import { ERROR_MESSAGES } from '../constants/errorMessages.js';
 import ProductService from './ProductService.js';
 import PromotionService from './PromotionService.js';
 
@@ -132,7 +132,7 @@ class PurchaseService {
       );
       return shouldAdd ? promotion.calculateSetSize() : quantity;
     } catch (error) {
-      if (error.message === '프로모션 재고 부족') {
+      if (error.message === ERROR_MESSAGES.INSUFFICIENT_STOCK) {
         throw error;
       }
       return quantity;
@@ -211,7 +211,7 @@ class PurchaseService {
   }
 
   #handlePurchaseError(error, name, quantity) {
-    if (error.message === '프로모션 재고 부족') {
+    if (error.message === ERROR_MESSAGES.INSUFFICIENT_STOCK) {
       this.#purchaseAsNormalProduct(name, quantity);
     } else {
       throw error;
