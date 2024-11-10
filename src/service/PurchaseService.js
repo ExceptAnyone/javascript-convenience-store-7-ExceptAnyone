@@ -76,12 +76,17 @@ class PurchaseService {
   }
 
   #createPurchaseResult(purchaseItems, nonPromotionTotal) {
+    const totalQuantity = purchaseItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
     return {
       purchaseItems,
       totalPrice: this.#totalPrice,
       totalDiscount: this.#totalDiscount,
       giftItems: this.#giftItems,
       nonPromotionTotal,
+      totalQuantity,
     };
   }
 
@@ -113,19 +118,25 @@ class PurchaseService {
   }
 
   async #handlePromotionQuantity(product, quantity) {
-    if (!product.hasPromotion()) return quantity;
+    try {
+      if (!product.hasPromotion()) return quantity;
 
-    const promotion = this.#promotionService.findPromotion(product.promotion);
-    if (!promotion) return quantity;
+      const promotion = this.#promotionService.findPromotion(product.promotion);
+      if (!promotion) return quantity;
 
-    if (quantity < promotion.buy) return quantity;
+      if (quantity < promotion.buy) return quantity;
+      if (quantity >= promotion.calculateSetSize()) return quantity;
 
-    if (quantity >= promotion.calculateSetSize()) return quantity;
-
-    const shouldAdd = await this.#promotionService.showAdditionalItemMessage(
-      product.name
-    );
-    return shouldAdd ? promotion.calculateSetSize() : quantity;
+      const shouldAdd = await this.#promotionService.showAdditionalItemMessage(
+        product.name
+      );
+      return shouldAdd ? promotion.calculateSetSize() : quantity;
+    } catch (error) {
+      if (error.message === '프로모션 재고 부족') {
+        throw error;
+      }
+      return quantity;
+    }
   }
 
   async #validateAndProcessPurchase(product, quantity) {
@@ -174,6 +185,10 @@ class PurchaseService {
 
   #calculatePromotionQuantities(product, promotionProduct, quantity) {
     const promotion = this.#promotionService.findPromotion(product.promotion);
+    if (!promotion) {
+      return { promotionQuantity: 0, remainingQuantity: quantity };
+    }
+
     const maxPromotionSets = Math.floor(
       promotionProduct.quantity / promotion.buy
     );
