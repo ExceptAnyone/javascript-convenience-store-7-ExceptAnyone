@@ -121,122 +121,110 @@ class PurchaseService {
     await this.#tryPromotionPurchase(product, quantity);
   }
 
-  async #updateStockAndCalculate(product, quantity) {
+  async #tryPromotionPurchase(product, quantity) {
     try {
-      // 증정 수량 먼저 계산
-      const promotionProduct = this.#productService.findPromotionProduct(
-        product.name
-      );
-      const giftQuantity = this.#promotionService.calculateGiftQuantity(
-        promotionProduct || product,
-        quantity
-      );
-
-      // 재고 차감
-      if (product.hasPromotion()) {
-        await this.#tryPromotionPurchase(product, quantity);
-      } else {
-        this.#productService.updateStock(product.name, quantity, false);
+      const promotionProduct = this.#findPromotionProduct(product.name);
+      if (!promotionProduct) {
+        return this.#purchaseAsNormalProduct(product.name, quantity);
       }
 
-      // 나머지 계산
-      const basePrice = this.#productService.calculatePrice(product, quantity);
-      const promotionDiscount = this.#promotionService.calculateDiscount(
-        product,
-        quantity
-      );
-
-      this.#totalPrice += basePrice;
-      this.#totalDiscount += promotionDiscount;
-
-      if (giftQuantity > 0) {
-        this.#giftItems.set(
-          product.name,
-          (this.#giftItems.get(product.name) || 0) + giftQuantity
-        );
-      }
+      await this.#handlePromotionPurchase(product, promotionProduct, quantity);
     } catch (error) {
+      this.#handlePurchaseError(error, product.name, quantity);
+    }
+  }
+
+  #findPromotionProduct(name) {
+    return this.#productService.findPromotionProduct(name);
+  }
+
+  #purchaseAsNormalProduct(name, quantity) {
+    this.#productService.updateStock(name, quantity, false);
+  }
+
+  async #handlePromotionPurchase(product, promotionProduct, quantity) {
+    const { promotionQuantity, remainingQuantity } =
+      this.#calculatePromotionQuantities(product, promotionProduct, quantity);
+
+    await this.#updatePromotionStock(
+      product.name,
+      promotionQuantity,
+      remainingQuantity
+    );
+  }
+
+  #calculatePromotionQuantities(product, promotionProduct, quantity) {
+    const promotion = this.#promotionService.findPromotion(product.promotion);
+    const maxPromotionSets = Math.floor(
+      promotionProduct.quantity / promotion.buy
+    );
+    const promotionQuantity = Math.min(
+      maxPromotionSets * promotion.buy,
+      quantity
+    );
+    const remainingQuantity = quantity - promotionQuantity;
+
+    return { promotionQuantity, remainingQuantity };
+  }
+
+  async #updatePromotionStock(name, promotionQuantity, remainingQuantity) {
+    if (promotionQuantity > 0) {
+      this.#productService.updateStock(name, promotionQuantity, true);
+    }
+    if (remainingQuantity > 0) {
+      this.#productService.updateStock(name, remainingQuantity, false);
+    }
+  }
+
+  #handlePurchaseError(error, name, quantity) {
+    if (error.message === '프로모션 재고 부족') {
+      this.#purchaseAsNormalProduct(name, quantity);
+    } else {
       throw error;
     }
   }
 
-  async #tryPromotionPurchase(product, quantity) {
-    try {
-      // 프로모션 상품 찾기
-      const promotionProduct = this.#productService.findPromotionProduct(
-        product.name
-      );
-      if (!promotionProduct) {
-        // 프로모션 상품이 없으면 일반 상품으로 구매
-        this.#productService.updateStock(product.name, quantity, false);
-        return;
-      }
+  #calculatePurchaseAmounts(product, quantity) {
+    const { basePrice, promotionDiscount } = this.#calculatePrices(
+      product,
+      quantity
+    );
+    const giftQuantity = this.#calculateGiftQuantity(product, quantity);
 
-      // 프로모션 적용 가능한 수량 계산
-      const promotion = this.#promotionService.findPromotion(product.promotion);
-      const maxPromotionSets = Math.floor(
-        promotionProduct.quantity / promotion.buy
-      );
-      const promotionQuantity = Math.min(
-        maxPromotionSets * promotion.buy,
-        quantity
-      );
-
-      // 프로모션 수량만큼 프로모션 재고에서 차감
-      if (promotionQuantity > 0) {
-        this.#productService.updateStock(product.name, promotionQuantity, true);
-      }
-
-      // 남은 수량은 일반 재고에서 차감
-      const remainingQuantity = quantity - promotionQuantity;
-      if (remainingQuantity > 0) {
-        this.#productService.updateStock(
-          product.name,
-          remainingQuantity,
-          false
-        );
-      }
-    } catch (error) {
-      if (error.message === '프로모션 재고 부족') {
-        // 전체 수량을 일반 상품으로 구매
-        this.#productService.updateStock(product.name, quantity, false);
-      } else {
-        throw error;
-      }
-    }
+    this.#updateTotals(basePrice, promotionDiscount);
+    this.#updateGiftItems(product.name, giftQuantity);
   }
 
-  #calculatePurchaseAmounts(product, quantity) {
+  #calculatePrices(product, quantity) {
     const basePrice = this.#productService.calculatePrice(product, quantity);
     const promotionDiscount = this.#promotionService.calculateDiscount(
       product,
       quantity
     );
 
-    // 프로모션 상품의 재고를 기준으로 증정 수량 계산
+    return { basePrice, promotionDiscount };
+  }
+
+  #calculateGiftQuantity(product, quantity) {
     const promotionProduct = this.#productService.findPromotionProduct(
       product.name
     );
-    const giftQuantity = this.#promotionService.calculateGiftQuantity(
+    return this.#promotionService.calculateGiftQuantity(
       promotionProduct || product,
       quantity
     );
-
-    this.#totalPrice += basePrice;
-    this.#totalDiscount += promotionDiscount;
-
-    if (giftQuantity > 0) {
-      this.#giftItems.set(
-        product.name,
-        (this.#giftItems.get(product.name) || 0) + giftQuantity
-      );
-    }
   }
 
-  async #confirmNonPromotionalPurchase(name, quantity) {
-    const message = `현재 ${name} ${quantity}개는 프로모션 할인이 적용되지 않습니다. 그래도 구매하시겠습니까? (Y/N)\n`;
-    const response = await inputView.readUserInput(message);
-    return response.toUpperCase() === 'Y';
+  #updateTotals(basePrice, promotionDiscount) {
+    this.#totalPrice += basePrice;
+    this.#totalDiscount += promotionDiscount;
+  }
+
+  #updateGiftItems(productName, giftQuantity) {
+    if (giftQuantity > 0) {
+      const currentGiftQuantity = this.#giftItems.get(productName) || 0;
+      this.#giftItems.set(productName, currentGiftQuantity + giftQuantity);
+    }
   }
 }
 
