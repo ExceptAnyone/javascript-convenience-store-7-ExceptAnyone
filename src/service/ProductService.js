@@ -29,28 +29,42 @@ class ProductService {
   }
 
   updateStock(name, quantity, isPromotion) {
-    const promotionProduct = this.#productRepository.findPromotionProduct(name);
-    const normalProduct = this.#productRepository.findNormalProduct(name);
+    const products = this.#findProducts(name);
 
     if (isPromotion) {
-      if (promotionProduct && promotionProduct.quantity >= quantity) {
-        promotionProduct.quantity -= quantity;
-        return;
-      }
-      throw new Error('프로모션 재고 부족');
+      this.#handlePromotionStock(products, quantity);
+      return;
     }
 
-    // 일반 재고 차감 시 프로모션 재고 우선 사용
-    if (promotionProduct && promotionProduct.quantity > 0) {
+    this.#handleNormalStock(products, quantity);
+  }
+
+  #findProducts(name) {
+    return {
+      promotionProduct: this.#productRepository.findPromotionProduct(name),
+      normalProduct: this.#productRepository.findNormalProduct(name),
+    };
+  }
+
+  #handlePromotionStock({ promotionProduct }, quantity) {
+    if (!promotionProduct || promotionProduct.quantity < quantity) {
+      throw new Error('프로모션 재고 부족');
+    }
+    promotionProduct.quantity -= quantity;
+  }
+
+  #handleNormalStock({ promotionProduct, normalProduct }, quantity) {
+    let remainingQuantity = quantity;
+
+    if (promotionProduct?.quantity > 0) {
       const availablePromotion = Math.min(promotionProduct.quantity, quantity);
       promotionProduct.quantity -= availablePromotion;
+      remainingQuantity -= availablePromotion;
+    }
 
-      const remainingQuantity = quantity - availablePromotion;
-      if (remainingQuantity > 0 && normalProduct) {
-        normalProduct.quantity -= remainingQuantity;
-      }
-    } else if (normalProduct) {
-      normalProduct.quantity -= quantity;
+    if (remainingQuantity > 0) {
+      if (!normalProduct) throw new Error('[ERROR] 상품의 재고가 부족합니다.');
+      normalProduct.quantity -= remainingQuantity;
     }
   }
 
