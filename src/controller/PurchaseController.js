@@ -5,6 +5,7 @@ import PurchaseService from '../service/PurchaseService.js';
 import inputView from '../views/inputView/InputView.js';
 import outputView from '../views/outputView/OutputView.js';
 import MembershipService from '../service/MembershipService.js';
+import Validator from '../validator/Validator.js';
 
 class PurchaseController {
   #purchaseService;
@@ -78,13 +79,16 @@ class PurchaseController {
 
   #parsePurchaseInput(input) {
     try {
-      return input.match(/\[([^\]]+)\]/g).map((item) => {
-        const [name, quantity] = item.slice(1, -1).split('-');
-        this.#validatePurchaseInput(name, quantity);
-        return { name, quantity: parseInt(quantity) };
-      });
+      const validatedItems = Validator.validatePurchaseInput(
+        input,
+        this.#purchaseService.getProductService()
+      );
+      return validatedItems.map(({ name, quantity }) => ({
+        name,
+        quantity: parseInt(quantity),
+      }));
     } catch (error) {
-      throw new Error('[ERROR] 올바르지 않은 형식으로 입력했습니다.');
+      throw error;
     }
   }
 

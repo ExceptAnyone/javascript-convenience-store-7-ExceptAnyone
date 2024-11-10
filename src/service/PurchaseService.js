@@ -245,6 +245,10 @@ class PurchaseService {
       this.#giftItems.set(productName, currentGiftQuantity + giftQuantity);
     }
   }
+
+  getProductService() {
+    return this.#productService;
+  }
 }
 
 export default PurchaseService;
