@@ -1,13 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const fileReader = {
   async readProductsFile() {
     try {
-      const filePath = path.join(__dirname, '../../public/products.md');
+      const filePath = path.join(process.cwd(), 'public/products.md');
+
       const content = await fs.readFile(filePath, 'utf-8');
       if (!content.trim()) {
         throw new Error('[ERROR] 상품 목록 파일이 비어있습니다.');
@@ -21,9 +19,9 @@ const fileReader = {
 
   async readPromotionsFile() {
     try {
-      const filePath = path.join(__dirname, '../../public/promotions.md');
-      const content = await fs.readFile(filePath, 'utf-8');
+      const filePath = path.join(process.cwd(), 'public/promotions.md');
 
+      const content = await fs.readFile(filePath, 'utf-8');
       if (!content.trim()) {
         throw new Error('[ERROR] 프로모션 목록 파일이 비어있습니다.');
       }
