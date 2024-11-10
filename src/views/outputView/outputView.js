@@ -32,7 +32,8 @@ const outputView = {
 
   printPurchaseItems(purchaseItems) {
     purchaseItems.forEach(({ name, quantity, price }) => {
-      this.printMessages(`${name}\t\t${quantity}\t${price.toLocaleString()}`);
+      const nameField = name.length > 2 ? `${name} \t` : `${name}\t\t`;
+      this.printMessages(`${nameField}${quantity}\t${price.toLocaleString()}`);
     });
   },
 
@@ -41,31 +42,37 @@ const outputView = {
 
     this.printMessages('===========증\t정=============');
     giftItems.forEach((quantity, name) => {
-      this.printMessages(`${name}\t\t${quantity}`);
+      const nameField = name.length > 2 ? `${name} \t` : `${name}\t\t`;
+      this.printMessages(`${nameField}${quantity}`);
     });
   },
 
   printTotalAmounts(purchaseResult) {
-    const { totalPrice, totalDiscount, membershipDiscount } = purchaseResult;
+    const { totalPrice, totalDiscount, membershipDiscount, totalQuantity } =
+      purchaseResult;
 
     this.printMessages('==============================');
-    this.printAmount('총구매액', totalPrice);
+    this.printAmount('총구매액', totalPrice, totalQuantity);
     this.printDiscount('행사할인', totalDiscount);
     this.printDiscount('멤버십할인', membershipDiscount);
     this.printFinalAmount(totalPrice, totalDiscount, membershipDiscount);
   },
 
-  printAmount(label, amount) {
-    this.printMessages(`${label}\t\t${amount.toLocaleString()}`);
+  printAmount(label, amount, totalQuantity) {
+    const labelField = label.length > 2 ? `${label} \t` : `${label}\t\t`;
+    this.printMessages(
+      `${labelField}${totalQuantity}\t${amount.toLocaleString()}`
+    );
   },
 
   printDiscount(label, amount) {
-    this.printMessages(`${label}\t\t-${amount.toLocaleString()}`);
+    const labelField = label.length > 2 ? `${label} \t` : `${label}\t\t`;
+    this.printMessages(`${labelField}\t-${amount.toLocaleString()}`);
   },
 
   printFinalAmount(totalPrice, totalDiscount, membershipDiscount) {
     const finalPrice = totalPrice - totalDiscount - (membershipDiscount || 0);
-    this.printMessages(`내실돈\t\t\t ${finalPrice.toLocaleString()}`);
+    this.printMessages(`내실돈\t\t\t${finalPrice.toLocaleString()}`);
   },
 };
 
