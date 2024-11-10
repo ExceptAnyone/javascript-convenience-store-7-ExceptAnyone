@@ -92,7 +92,7 @@ class PromotionService {
   }
 
   async showAdditionalItemMessage(productName) {
-    const message = `현재 ${productName}은(는) 1개를 무료로 더 받을 수 있습니다. 추가하시겠습니까? (Y/N)\n`;
+    const message = `\n현재 ${productName}은(는) 1개를 무료로 더 받을 수 있습니다. 추가하시겠습니까? (Y/N)\n`;
     const response = await inputView.readUserInput(message);
     return response.toUpperCase() === 'Y';
   }
