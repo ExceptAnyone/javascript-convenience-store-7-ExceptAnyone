@@ -32,7 +32,7 @@ const outputView = {
 
   printPurchaseItems(purchaseItems) {
     purchaseItems.forEach(({ name, quantity, price }) => {
-      const nameField = name.length > 2 ? `${name} \t` : `${name}\t\t`;
+      const nameField = this.formatNameField(name);
       this.printMessages(`${nameField}${quantity}\t${price.toLocaleString()}`);
     });
   },
@@ -42,9 +42,13 @@ const outputView = {
 
     this.printMessages('===========증\t정=============');
     giftItems.forEach((quantity, name) => {
-      const nameField = name.length > 2 ? `${name} \t` : `${name}\t\t`;
-      this.printMessages(`${nameField}${quantity}`);
+      this.printMessages(`${this.formatNameField(name)}${quantity}`);
     });
+  },
+
+  formatNameField(name) {
+    if (name.length > 3) return `${name} \t`;
+    return `${name}\t\t`;
   },
 
   printTotalAmounts(purchaseResult) {
