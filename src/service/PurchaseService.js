@@ -79,35 +79,46 @@ class PurchaseService {
   }
 
   async #processSinglePurchase(name, quantity) {
+    const product = this.#findAndValidateProduct(name);
+    const updatedQuantity = await this.#handlePromotionQuantity(
+      product,
+      quantity
+    );
+    await this.#validateAndProcessPurchase(product, updatedQuantity);
+
+    return { product, quantity: updatedQuantity };
+  }
+
+  #findAndValidateProduct(name) {
     const product = this.#productService.findProduct(name);
     if (!product) {
       throw new Error('[ERROR] 존재하지 않는 상품입니다.');
     }
+    return product;
+  }
 
-    let updatedQuantity = quantity;
-    if (product.hasPromotion()) {
-      const promotion = this.#promotionService.findPromotion(product.promotion);
-      if (quantity < promotion.calculateSetSize()) {
-        const shouldAdd =
-          await this.#promotionService.showAdditionalItemMessage(name);
-        if (shouldAdd) {
-          updatedQuantity = promotion.calculateSetSize();
-        }
-      }
-    }
+  async #handlePromotionQuantity(product, quantity) {
+    if (!product.hasPromotion()) return quantity;
 
+    const promotion = this.#promotionService.findPromotion(product.promotion);
+    if (quantity >= promotion.calculateSetSize()) return quantity;
+
+    const shouldAdd = await this.#promotionService.showAdditionalItemMessage(
+      product.name
+    );
+    return shouldAdd ? promotion.calculateSetSize() : quantity;
+  }
+
+  async #validateAndProcessPurchase(product, quantity) {
     const isApplicable = await this.#promotionService.isPromotionApplicable(
       product,
-      parseInt(updatedQuantity)
+      parseInt(quantity)
     );
-    if (!isApplicable) {
-      throw new Error('구매 취소');
-    }
 
-    this.#calculatePurchaseAmounts(product, updatedQuantity);
-    await this.#tryPromotionPurchase(product, updatedQuantity);
+    if (!isApplicable) throw new Error('구매 취소');
 
-    return { product, quantity: updatedQuantity };
+    this.#calculatePurchaseAmounts(product, quantity);
+    await this.#tryPromotionPurchase(product, quantity);
   }
 
   async #updateStockAndCalculate(product, quantity) {
