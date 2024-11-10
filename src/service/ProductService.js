@@ -23,69 +23,39 @@ class ProductService {
   }
 
   findProduct(name) {
+    return this.#findPromotionOrNormalProduct(name);
+  }
+
+  #findPromotionOrNormalProduct(name) {
     const promotionProduct = this.#productRepository.findPromotionProduct(name);
     if (promotionProduct) return promotionProduct;
-
     return this.#productRepository.findNormalProduct(name);
   }
 
   updateStock(name, quantity, isPromotion) {
-    const products = this.#findProducts(name);
-
     if (isPromotion) {
-      this.#handlePromotionStock(products, quantity);
+      this.#updatePromotionStock(name, quantity);
       return;
     }
-
-    this.#handleNormalStock(products, quantity);
+    this.#updateNormalStock(name, quantity);
   }
 
-  #findProducts(name) {
-    return {
-      promotionProduct: this.#productRepository.findPromotionProduct(name),
-      normalProduct: this.#productRepository.findNormalProduct(name),
-    };
+  #updatePromotionStock(name, quantity) {
+    const product = this.#productRepository.findPromotionProduct(name);
+    this.#validateStock(product, quantity);
+    product.quantity -= quantity;
   }
 
-  #handlePromotionStock({ promotionProduct }, quantity) {
-    if (!promotionProduct || promotionProduct.quantity < quantity) {
-      throw new Error('프로모션 재고 부족');
-    }
-    promotionProduct.quantity -= quantity;
+  #updateNormalStock(name, quantity) {
+    const product = this.#productRepository.findNormalProduct(name);
+    this.#validateStock(product, quantity);
+    product.quantity -= quantity;
   }
 
-  #handleNormalStock({ promotionProduct, normalProduct }, quantity) {
-    const { availablePromotion, remainingQuantity } =
-      this.#calculatePromotionUsage(promotionProduct, quantity);
-
-    this.#updatePromotionStock(promotionProduct, availablePromotion);
-    this.#updateNormalStock(normalProduct, remainingQuantity);
-  }
-
-  #calculatePromotionUsage(promotionProduct, quantity) {
-    if (!promotionProduct || promotionProduct.quantity <= 0) {
-      return { availablePromotion: 0, remainingQuantity: quantity };
-    }
-
-    const availablePromotion = Math.min(promotionProduct.quantity, quantity);
-    const remainingQuantity = quantity - availablePromotion;
-
-    return { availablePromotion, remainingQuantity };
-  }
-
-  #updatePromotionStock(promotionProduct, quantity) {
-    if (quantity <= 0) return;
-    promotionProduct.quantity -= quantity;
-  }
-
-  #updateNormalStock(normalProduct, quantity) {
-    if (quantity <= 0) return;
-
-    if (!normalProduct) {
+  #validateStock(product, quantity) {
+    if (!product || product.quantity < quantity) {
       throw new Error(ERROR_MESSAGES.INSUFFICIENT_STOCK);
     }
-
-    normalProduct.quantity -= quantity;
   }
 
   calculatePrice(product, quantity) {
