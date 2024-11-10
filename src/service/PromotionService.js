@@ -46,49 +46,42 @@ class PromotionService {
     const promotion = this.findPromotion(product.promotion);
     if (!promotion) return 0;
 
-    // 프로모션 재고 확인
-
     const maxPromotionQuantity = Math.min(product.quantity, quantity);
 
-    // 프로모션 세트 수 계산
     const sets = promotion.calculatePromotionSets(maxPromotionQuantity);
-
-    console.log('maxPromotionQuantity', maxPromotionQuantity);
-    console.log('sets', sets);
-    console.log('sets * promotion.get', sets * promotion.get);
 
     return sets * promotion.get;
   }
 
   async isPromotionApplicable(product, quantity) {
-    if (!product.hasPromotion()) {
-      return true;
-    }
+    if (!this.#isPromotionValid(product)) return true;
+
+    const promotionDetails = this.#calculatePromotionDetails(product, quantity);
+    return await this.#checkPromotionApplicability(product, promotionDetails);
+  }
+
+  #isPromotionValid(product) {
+    if (!product.hasPromotion()) return false;
 
     const promotion = this.findPromotion(product.promotion);
-    if (!promotion || !promotion.isValid()) {
-      return false;
-    }
+    return promotion && promotion.isValid();
+  }
 
-    // 프로모션 재고 계산
-    const promotionProduct = product;
-    const promotionQuantity = promotionProduct.quantity;
+  #calculatePromotionDetails(product, quantity) {
+    const promotionQuantity = product.quantity;
+    const promotion = this.findPromotion(product.promotion);
 
-    // 프로모션 적용 가능한 세트 수 계산 (2+1의 경우 2개가 1세트)
     const setsAvailable = Math.floor(promotionQuantity / promotion.buy);
     const maxPromotionItems = setsAvailable * promotion.buy;
-
-    // 프로모션 적용 불가능한 수량 계산
     const nonPromotionItems = quantity - maxPromotionItems;
 
-    if (nonPromotionItems > 0) {
-      return await this.#confirmPartialPromotion(
-        product.name,
-        nonPromotionItems
-      );
-    }
+    return { nonPromotionItems };
+  }
 
-    return true;
+  async #checkPromotionApplicability(product, { nonPromotionItems }) {
+    if (nonPromotionItems <= 0) return true;
+
+    return await this.#confirmPartialPromotion(product.name, nonPromotionItems);
   }
 
   async showAdditionalItemMessage(productName) {
