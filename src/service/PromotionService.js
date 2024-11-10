@@ -3,6 +3,7 @@
 import fileReader from '../fileReader/fileReader.js';
 import Promotion from '../model/Promotion.js';
 import inputView from '../views/inputView/InputView.js';
+import { ERROR_MESSAGES } from '../constants/errorMessages.js';
 
 class PromotionService {
   #promotions;
@@ -26,9 +27,14 @@ class PromotionService {
   }
 
   findPromotion(promotionName) {
-    return this.#promotions.find(
-      (p) => p.name === promotionName && p.isValid()
-    );
+    const promotion = this.#promotions.find((p) => p.name === promotionName);
+    if (!promotion) return null;
+
+    if (!promotion.isValid()) {
+      return null;
+    }
+
+    return promotion;
   }
 
   calculateDiscount(product, quantity) {
@@ -54,17 +60,29 @@ class PromotionService {
   }
 
   async isPromotionApplicable(product, quantity) {
-    if (!this.#isPromotionValid(product)) return true;
+    try {
+      if (!this.#isPromotionValid(product)) return true;
 
-    const promotionDetails = this.#calculatePromotionDetails(product, quantity);
-    return await this.#checkPromotionApplicability(product, promotionDetails);
+      const promotionDetails = this.#calculatePromotionDetails(
+        product,
+        quantity
+      );
+      return await this.#checkPromotionApplicability(product, promotionDetails);
+    } catch (error) {
+      if (error.message === ERROR_MESSAGES.INVALID_PROMOTION_PERIOD) {
+        throw error;
+      }
+      return true;
+    }
   }
 
   #isPromotionValid(product) {
     if (!product.hasPromotion()) return false;
 
     const promotion = this.findPromotion(product.promotion);
-    return promotion && promotion.isValid();
+    if (!promotion) return false;
+
+    return true;
   }
 
   #calculatePromotionDetails(product, quantity) {
