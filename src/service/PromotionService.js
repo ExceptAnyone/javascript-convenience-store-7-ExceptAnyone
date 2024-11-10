@@ -35,7 +35,10 @@ class PromotionService {
     const promotion = this.findPromotion(product.promotion);
     if (!promotion) return 0;
 
-    const sets = promotion.calculatePromotionSets(quantity);
+    // 프로모션 재고를 기준으로 계산
+    const maxPromotionQuantity = Math.min(product.quantity, quantity);
+    const sets = promotion.calculatePromotionSets(maxPromotionQuantity);
+
     return sets * promotion.get * product.price;
   }
 
