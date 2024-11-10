@@ -116,6 +116,10 @@ class PurchaseService {
     if (!product.hasPromotion()) return quantity;
 
     const promotion = this.#promotionService.findPromotion(product.promotion);
+    if (!promotion) return quantity;
+
+    if (quantity < promotion.buy) return quantity;
+
     if (quantity >= promotion.calculateSetSize()) return quantity;
 
     const shouldAdd = await this.#promotionService.showAdditionalItemMessage(
