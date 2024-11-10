@@ -39,12 +39,16 @@ class PurchaseService {
       let nonPromotionTotal = 0;
 
       for (const { name, quantity } of purchaseList) {
-        const product = await this.#processSinglePurchase(name, quantity);
-        const itemPrice = product.price * quantity;
+        const { product, quantity: updatedQuantity } =
+          await this.#processSinglePurchase(name, quantity);
+        const itemPrice = this.#productService.calculatePrice(
+          product,
+          quantity
+        );
 
         purchaseItems.push({
           name,
-          quantity,
+          quantity: updatedQuantity,
           price: itemPrice,
           hasPromotion: product.hasPromotion(),
         });
@@ -80,33 +84,30 @@ class PurchaseService {
       throw new Error('[ERROR] 존재하지 않는 상품입니다.');
     }
 
+    let updatedQuantity = quantity;
     if (product.hasPromotion()) {
       const promotion = this.#promotionService.findPromotion(product.promotion);
-      if (quantity < promotion.buy) {
+      if (quantity < promotion.calculateSetSize()) {
         const shouldAdd =
           await this.#promotionService.showAdditionalItemMessage(name);
         if (shouldAdd) {
-          quantity = promotion.buy;
+          updatedQuantity = promotion.calculateSetSize();
         }
       }
     }
 
     const isApplicable = await this.#promotionService.isPromotionApplicable(
       product,
-      parseInt(quantity)
+      parseInt(updatedQuantity)
     );
     if (!isApplicable) {
-      const shouldContinue = await this.#confirmNonPromotionalPurchase(
-        name,
-        quantity
-      );
-      if (!shouldContinue) {
-        throw new Error('구매 취소');
-      }
+      throw new Error('구매 취소');
     }
 
-    await this.#updateStockAndCalculate(product, parseInt(quantity));
-    return product;
+    this.#calculatePurchaseAmounts(product, updatedQuantity);
+    await this.#tryPromotionPurchase(product, updatedQuantity);
+
+    return { product, quantity: updatedQuantity };
   }
 
   async #updateStockAndCalculate(product, quantity) {
@@ -150,10 +151,43 @@ class PurchaseService {
 
   async #tryPromotionPurchase(product, quantity) {
     try {
-      this.#productService.updateStock(product.name, quantity, true);
+      // 프로모션 상품 찾기
+      const promotionProduct = this.#productService.findPromotionProduct(
+        product.name
+      );
+      if (!promotionProduct) {
+        // 프로모션 상품이 없으면 일반 상품으로 구매
+        this.#productService.updateStock(product.name, quantity, false);
+        return;
+      }
+
+      // 프로모션 적용 가능한 수량 계산
+      const promotion = this.#promotionService.findPromotion(product.promotion);
+      const maxPromotionSets = Math.floor(
+        promotionProduct.quantity / promotion.buy
+      );
+      const promotionQuantity = Math.min(
+        maxPromotionSets * promotion.buy,
+        quantity
+      );
+
+      // 프로모션 수량만큼 프로모션 재고에서 차감
+      if (promotionQuantity > 0) {
+        this.#productService.updateStock(product.name, promotionQuantity, true);
+      }
+
+      // 남은 수량은 일반 재고에서 차감
+      const remainingQuantity = quantity - promotionQuantity;
+      if (remainingQuantity > 0) {
+        this.#productService.updateStock(
+          product.name,
+          remainingQuantity,
+          false
+        );
+      }
     } catch (error) {
       if (error.message === '프로모션 재고 부족') {
-        // 일반 상품으로 시도
+        // 전체 수량을 일반 상품으로 구매
         this.#productService.updateStock(product.name, quantity, false);
       } else {
         throw error;
