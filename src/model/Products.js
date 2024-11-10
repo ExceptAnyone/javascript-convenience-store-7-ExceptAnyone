@@ -7,6 +7,30 @@ class Products {
     this.products = products;
   }
 
+  findPromotionProduct(name) {
+    return this.products.find(
+      (product) => product.name === name && product.promotion !== 'null'
+    );
+  }
+
+  findNormalProduct(name) {
+    return this.products.find(
+      (product) => product.name === name && product.promotion === 'null'
+    );
+  }
+
+  updateStock(name, quantity, isPromotion = false) {
+    const product = isPromotion
+      ? this.findPromotionProduct(name)
+      : this.findNormalProduct(name);
+
+    if (product && parseInt(product.quantity) >= parseInt(quantity)) {
+      product.quantity = (
+        parseInt(product.quantity) - parseInt(quantity)
+      ).toString();
+    }
+  }
+
   findProduct(name) {
     return this.products.find((product) => product.name === name);
   }
@@ -46,7 +70,7 @@ class Products {
   }
 
   #formatQuantity(quantity) {
-    return quantity === '0' ? '재고 없음' : `${quantity}개`;
+    return Number(quantity) <= 0 ? '재고 없음' : `${quantity}개`;
   }
 
   #formatPromotion(promotion) {

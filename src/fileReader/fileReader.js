@@ -9,7 +9,6 @@ const fileReader = {
     try {
       const filePath = path.join(__dirname, '../../public/products.md');
       const content = await fs.readFile(filePath, 'utf-8');
-
       if (!content.trim()) {
         throw new Error('[ERROR] 상품 목록 파일이 비어있습니다.');
       }
