@@ -54,18 +54,37 @@ class ProductService {
   }
 
   #handleNormalStock({ promotionProduct, normalProduct }, quantity) {
-    let remainingQuantity = quantity;
+    const { availablePromotion, remainingQuantity } =
+      this.#calculatePromotionUsage(promotionProduct, quantity);
 
-    if (promotionProduct?.quantity > 0) {
-      const availablePromotion = Math.min(promotionProduct.quantity, quantity);
-      promotionProduct.quantity -= availablePromotion;
-      remainingQuantity -= availablePromotion;
+    this.#updatePromotionStock(promotionProduct, availablePromotion);
+    this.#updateNormalStock(normalProduct, remainingQuantity);
+  }
+
+  #calculatePromotionUsage(promotionProduct, quantity) {
+    if (!promotionProduct || promotionProduct.quantity <= 0) {
+      return { availablePromotion: 0, remainingQuantity: quantity };
     }
 
-    if (remainingQuantity > 0) {
-      if (!normalProduct) throw new Error('[ERROR] 상품의 재고가 부족합니다.');
-      normalProduct.quantity -= remainingQuantity;
+    const availablePromotion = Math.min(promotionProduct.quantity, quantity);
+    const remainingQuantity = quantity - availablePromotion;
+
+    return { availablePromotion, remainingQuantity };
+  }
+
+  #updatePromotionStock(promotionProduct, quantity) {
+    if (quantity <= 0) return;
+    promotionProduct.quantity -= quantity;
+  }
+
+  #updateNormalStock(normalProduct, quantity) {
+    if (quantity <= 0) return;
+
+    if (!normalProduct) {
+      throw new Error('[ERROR] 상품의 재고가 부족합니다.');
     }
+
+    normalProduct.quantity -= quantity;
   }
 
   calculatePrice(product, quantity) {
