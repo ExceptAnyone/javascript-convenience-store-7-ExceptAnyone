@@ -1,4 +1,5 @@
 //@ts-check
+import { DateTimes } from '@woowacourse/mission-utils';
 
 class Promotion {
   constructor(name, buy, get, startDate, endDate) {
@@ -9,7 +10,7 @@ class Promotion {
     this.endDate = new Date(endDate);
   }
 
-  isValid(currentDate = new Date()) {
+  isValid(currentDate = DateTimes.now()) {
     return currentDate >= this.startDate && currentDate <= this.endDate;
   }
 
