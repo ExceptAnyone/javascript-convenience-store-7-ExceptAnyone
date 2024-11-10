@@ -26,31 +26,46 @@ class PurchaseController {
 
   async handlePurchase() {
     try {
-      let continueShopping = true;
-      while (continueShopping) {
-        await this.#showProducts();
-        const purchaseInput = await this.#getPurchaseInput();
-        const purchaseList = this.#parsePurchaseInput(purchaseInput);
-
-        const purchaseResult = await this.#purchaseService.processPurchase(
-          purchaseList
-        );
-
-        const useMembership = await this.#askForMembership();
-        const membershipDiscount = useMembership
-          ? this.#membershipService.calculateDiscount(
-              purchaseResult.nonPromotionTotal
-            )
-          : 0;
-        purchaseResult.membershipDiscount = membershipDiscount;
-
-        await this.#showReceipt(purchaseResult);
-        continueShopping = await this.#handleContinueShopping();
-      }
+      await this.#processPurchaseLoop();
     } catch (error) {
-      outputView.printErrorMessage(error);
-      return await this.handlePurchase();
+      return await this.#handlePurchaseError(error);
     }
+  }
+
+  async #processPurchaseLoop() {
+    let continueShopping = true;
+    while (continueShopping) {
+      const purchaseResult = await this.#processCurrentPurchase();
+      await this.#handleMembershipAndReceipt(purchaseResult);
+      continueShopping = await this.#handleContinueShopping();
+    }
+  }
+
+  async #processCurrentPurchase() {
+    await this.#showProducts();
+    const purchaseInput = await this.#getPurchaseInput();
+    const purchaseList = this.#parsePurchaseInput(purchaseInput);
+    return await this.#purchaseService.processPurchase(purchaseList);
+  }
+
+  async #handleMembershipAndReceipt(purchaseResult) {
+    const membershipDiscount = await this.#calculateMembershipDiscount(
+      purchaseResult.nonPromotionTotal
+    );
+    purchaseResult.membershipDiscount = membershipDiscount;
+    await this.#showReceipt(purchaseResult);
+  }
+
+  async #calculateMembershipDiscount(nonPromotionTotal) {
+    const useMembership = await this.#askForMembership();
+    return useMembership
+      ? this.#membershipService.calculateDiscount(nonPromotionTotal)
+      : 0;
+  }
+
+  async #handlePurchaseError(error) {
+    outputView.printErrorMessage(error);
+    return await this.handlePurchase();
   }
 
   async #showProducts() {
