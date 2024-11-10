@@ -25,7 +25,26 @@ class ProductRepository {
   }
 
   getAllProducts() {
-    return [...this.#products];
+    const productNames = this.#getUniqueProductNames();
+    return productNames.flatMap((name) => this.#getProductsByName(name));
+  }
+
+  #getUniqueProductNames() {
+    return [...new Set(this.#products.map((product) => product.name))];
+  }
+
+  #getProductsByName(name) {
+    const promotionProduct = this.findPromotionProduct(name);
+    const normalProduct = this.findNormalProduct(name);
+
+    if (!promotionProduct) return [normalProduct].filter(Boolean);
+
+    return [
+      promotionProduct,
+      !normalProduct
+        ? new Product(name, promotionProduct.price, 0, null)
+        : normalProduct,
+    ];
   }
 
   updateStock(name, quantity, isPromotion) {
