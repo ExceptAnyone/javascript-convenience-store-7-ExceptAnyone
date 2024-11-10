@@ -35,39 +35,54 @@ class PurchaseService {
   async processPurchase(purchaseList) {
     try {
       this.#resetPurchaseData();
-      const purchaseItems = [];
-      let nonPromotionTotal = 0;
+      const { purchaseItems, nonPromotionTotal } =
+        await this.#processPurchaseItems(purchaseList);
 
-      for (const { name, quantity } of purchaseList) {
-        const { product, quantity: updatedQuantity } =
-          await this.#processSinglePurchase(name, quantity);
-        const itemPrice = this.#productService.calculatePrice(
-          product,
-          quantity
-        );
-
-        purchaseItems.push({
-          name,
-          quantity: updatedQuantity,
-          price: itemPrice,
-          hasPromotion: product.hasPromotion(),
-        });
-
-        if (!product.hasPromotion()) {
-          nonPromotionTotal += itemPrice;
-        }
-      }
-
-      return {
-        purchaseItems,
-        totalPrice: this.#totalPrice,
-        totalDiscount: this.#totalDiscount,
-        giftItems: this.#giftItems,
-        nonPromotionTotal,
-      };
+      return this.#createPurchaseResult(purchaseItems, nonPromotionTotal);
     } catch (error) {
       throw error;
     }
+  }
+
+  async #processPurchaseItems(purchaseList) {
+    const purchaseItems = [];
+    let nonPromotionTotal = 0;
+
+    for (const purchaseItem of purchaseList) {
+      const { purchaseItem: processedItem, itemPrice } =
+        await this.#processAndCreatePurchaseItem(purchaseItem);
+
+      purchaseItems.push(processedItem);
+      if (!processedItem.hasPromotion) nonPromotionTotal += itemPrice;
+    }
+
+    return { purchaseItems, nonPromotionTotal };
+  }
+
+  async #processAndCreatePurchaseItem({ name, quantity }) {
+    const { product, quantity: updatedQuantity } =
+      await this.#processSinglePurchase(name, quantity);
+
+    const itemPrice = this.#productService.calculatePrice(product, quantity);
+
+    const purchaseItem = {
+      name,
+      quantity: updatedQuantity,
+      price: itemPrice,
+      hasPromotion: product.hasPromotion(),
+    };
+
+    return { purchaseItem, itemPrice };
+  }
+
+  #createPurchaseResult(purchaseItems, nonPromotionTotal) {
+    return {
+      purchaseItems,
+      totalPrice: this.#totalPrice,
+      totalDiscount: this.#totalDiscount,
+      giftItems: this.#giftItems,
+      nonPromotionTotal,
+    };
   }
 
   async showProducts() {
