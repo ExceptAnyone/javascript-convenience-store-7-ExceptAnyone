@@ -92,27 +92,28 @@ class PurchaseController {
     }
   }
 
-  #validatePurchaseInput(name, quantity) {
-    if (!name || !quantity) {
-      throw new Error('[ERROR] 올바르지 않은 형식으로 입력했습니다.');
-    }
-    if (isNaN(quantity) || quantity <= 0) {
-      throw new Error('[ERROR] 상품 수량은 1개 이상이어야 합니다.');
-    }
-  }
-
   async #askForMembership() {
-    const response = await inputView.readUserInput(
-      GAME_MESSAGES.ASK_MEMBERSHIP
-    );
-    return response.toUpperCase() === 'Y';
+    try {
+      const response = await inputView.readUserInput(
+        GAME_MESSAGES.ASK_MEMBERSHIP
+      );
+      return Validator.validateYesNoInput(response);
+    } catch (error) {
+      outputView.printErrorMessage(error);
+      return this.#askForMembership();
+    }
   }
 
   async #handleContinueShopping() {
-    const response = await inputView.readUserInput(
-      GAME_MESSAGES.ASK_CONTINUE_SHOPPING
-    );
-    return response.toUpperCase() === 'Y';
+    try {
+      const response = await inputView.readUserInput(
+        GAME_MESSAGES.ASK_CONTINUE_SHOPPING
+      );
+      return Validator.validateYesNoInput(response);
+    } catch (error) {
+      outputView.printErrorMessage(error);
+      return this.#handleContinueShopping();
+    }
   }
 
   async #showReceipt(purchaseResult) {
