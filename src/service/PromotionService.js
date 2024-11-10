@@ -43,13 +43,16 @@ class PromotionService {
     const promotion = this.findPromotion(product.promotion);
     if (!promotion) return 0;
 
+    // 프로모션 재고 확인
+
     const maxPromotionQuantity = Math.min(product.quantity, quantity);
 
+    // 프로모션 세트 수 계산
     const sets = promotion.calculatePromotionSets(maxPromotionQuantity);
 
-    if (maxPromotionQuantity < promotion.calculateSetSize()) {
-      this.showAdditionalItemMessage(product.name);
-    }
+    console.log('maxPromotionQuantity', maxPromotionQuantity);
+    console.log('sets', sets);
+    console.log('sets * promotion.get', sets * promotion.get);
 
     return sets * promotion.get;
   }
@@ -91,14 +94,8 @@ class PromotionService {
     return response.toUpperCase() === 'Y';
   }
 
-  async #confirmPartialPromotion(productName, remainingQuantity) {
-    const message = `현재 ${productName} ${remainingQuantity}개는 프로모션 할인이 적용되지 않습니다. 그래도 구매하시겠습니까? (Y/N)\n`;
-    const response = await inputView.readUserInput(message);
-    return response.toUpperCase() === 'Y';
-  }
-
-  async #confirmNonPromotionalPurchase(name, quantity) {
-    const message = `현재 ${name} ${quantity}개는 프로모션 할인이 적용되지 않습니다. 그래도 구매하시겠습니까? (Y/N)\n`;
+  async #confirmPartialPromotion(productName, nonPromotionItems) {
+    const message = `현재 ${productName} ${nonPromotionItems}개는 프로모션 할인이 적용되지 않습니다. 그래도 구매하시겠습니까? (Y/N)\n`;
     const response = await inputView.readUserInput(message);
     return response.toUpperCase() === 'Y';
   }
