@@ -145,7 +145,7 @@ class PurchaseService {
       parseInt(quantity)
     );
 
-    if (!isApplicable) throw new Error('구매 취소');
+    if (!isApplicable) throw new Error(ERROR_MESSAGES.INVALID_YES_NO);
 
     this.#calculatePurchaseAmounts(product, quantity);
     await this.#tryPromotionPurchase(product, quantity);
