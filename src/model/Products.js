@@ -35,7 +35,7 @@ class Product {
   }
 
   #formatPromotion() {
-    if (!this.promotion) {
+    if (!this.promotion || this.promotion === 'null') {
       return '';
     }
     return ` ${this.promotion}`;
