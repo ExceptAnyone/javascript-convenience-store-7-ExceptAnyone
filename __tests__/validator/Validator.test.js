@@ -1,5 +1,5 @@
-import Validator from '../../src/validator/Validator';
-import { ERROR_MESSAGES } from '../../src/constants/errorMessages';
+import Validator from '../../src/validator/Validator.js';
+import { ERROR_MESSAGES } from '../../src/constants/errorMessages.js';
 
 describe('Validator', () => {
   let mockProductService;

@@ -1,7 +1,7 @@
-import PromotionService from '../../src/service/PromotionService';
+import PromotionService from '../../src/service/PromotionService.js';
 import { DateTimes } from '@woowacourse/mission-utils';
-import inputView from '../../src/views/inputView/InputView';
-import fileReader from '../../src/fileReader/fileReader';
+import inputView from '../../src/views/inputView/InputView.js';
+import fileReader from '../../src/fileReader/fileReader.js';
 
 jest.mock('../../src/fileReader/fileReader', () => ({
   readPromotionsFile: jest.fn(),

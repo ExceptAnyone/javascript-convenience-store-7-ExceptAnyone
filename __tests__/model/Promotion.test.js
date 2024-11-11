@@ -1,5 +1,5 @@
 import { DateTimes } from '@woowacourse/mission-utils';
-import Promotion from '../../src/model/Promotion';
+import Promotion from '../../src/model/Promotion.js';
 
 describe('Promotion', () => {
   describe('constructor', () => {

@@ -1,4 +1,4 @@
-import MembershipService from '../../src/service/MembershipService';
+import MembershipService from '../../src/service/MembershipService.js';
 
 describe('memberShipService', () => {
   let membershipService;

@@ -1,5 +1,5 @@
-import { ERROR_MESSAGES } from '../../src/constants/errorMessages';
-import ProductRepository from '../../src/model/ProductRepository';
+import { ERROR_MESSAGES } from '../../src/constants/errorMessages.js';
+import ProductRepository from '../../src/model/ProductRepository.js';
 
 describe('ProductRepository', () => {
   let repository;

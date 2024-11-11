@@ -1,6 +1,6 @@
-import ProductService from '../../src/service/ProductService';
-import { ERROR_MESSAGES } from '../../src/constants/errorMessages';
-import fileReader from '../../src/fileReader/fileReader';
+import ProductService from '../../src/service/ProductService.js';
+import { ERROR_MESSAGES } from '../../src/constants/errorMessages.js';
+import fileReader from '../../src/fileReader/fileReader.js';
 
 jest.mock('../../src/fileReader/fileReader', () => ({
   readProductsFile: jest.fn(),
