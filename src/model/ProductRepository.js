@@ -53,13 +53,10 @@ class ProductRepository {
       ? this.findPromotionProduct(name)
       : this.findNormalProduct(name);
 
-    if (!product) {
-      throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND);
-    }
+    if (!product) throw new Error(ERROR_MESSAGES.PRODUCT_NOT_FOUND);
 
-    if (product.quantity < quantity) {
+    if (product.quantity < quantity)
       throw new Error(ERROR_MESSAGES.INSUFFICIENT_STOCK);
-    }
 
     product.quantity -= quantity;
   }
