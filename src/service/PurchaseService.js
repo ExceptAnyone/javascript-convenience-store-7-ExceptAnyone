@@ -222,11 +222,16 @@ class PurchaseService {
   }
 
   #handlePurchaseError(error, name, quantity) {
-    if (error.message === ERROR_MESSAGES.INSUFFICIENT_STOCK) {
+    if (this.#isInsufficientStockError(error)) {
       this.#purchaseAsNormalProduct(name, quantity);
-    } else {
-      throw error;
+      return;
     }
+
+    throw error;
+  }
+
+  #isInsufficientStockError(error) {
+    return error.message === ERROR_MESSAGES.INSUFFICIENT_STOCK;
   }
 
   #calculatePurchaseAmounts(product, quantity) {
