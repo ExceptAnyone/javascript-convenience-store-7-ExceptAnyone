@@ -119,24 +119,35 @@ class PurchaseService {
 
   async #handlePromotionQuantity(product, quantity) {
     try {
-      if (!product.hasPromotion()) return quantity;
-
-      const promotion = this.#promotionService.findPromotion(product.promotion);
-      if (!promotion) return quantity;
-
-      if (quantity < promotion.buy) return quantity;
-      if (quantity >= promotion.calculateSetSize()) return quantity;
-
-      const shouldAdd = await this.#promotionService.showAdditionalItemMessage(
-        product.name
-      );
-      return shouldAdd ? promotion.calculateSetSize() : quantity;
+      if (!this.#canApplyPromotion(product, quantity)) return quantity;
+      return await this.#calculatePromotionQuantity(product, quantity);
     } catch (error) {
-      if (error.message === ERROR_MESSAGES.INSUFFICIENT_STOCK) {
-        throw error;
-      }
-      return quantity;
+      return this.#handlePromotionError(error, quantity);
     }
+  }
+
+  #canApplyPromotion(product, quantity) {
+    if (!product.hasPromotion()) return false;
+    const promotion = this.#promotionService.findPromotion(product.promotion);
+    if (!promotion) return false;
+    return quantity >= promotion.buy;
+  }
+
+  async #calculatePromotionQuantity(product, quantity) {
+    const promotion = this.#promotionService.findPromotion(product.promotion);
+    if (quantity >= promotion.calculateSetSize()) return quantity;
+
+    const shouldAdd = await this.#promotionService.showAdditionalItemMessage(
+      product.name
+    );
+    return shouldAdd ? promotion.calculateSetSize() : quantity;
+  }
+
+  #handlePromotionError(error, quantity) {
+    if (error.message === ERROR_MESSAGES.INSUFFICIENT_STOCK) {
+      throw error;
+    }
+    return quantity;
   }
 
   async #validateAndProcessPurchase(product, quantity) {
