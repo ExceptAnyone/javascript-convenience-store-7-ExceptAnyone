@@ -1,7 +1,7 @@
 //@ts-check
 
 import fileReader from '../fileReader/fileReader.js';
-import outputView from '../views/outputView/OutputView.js';
+import outputView from '../views/outputView/outputView.js';
 import ProductRepository from '../model/ProductRepository.js';
 import { ERROR_MESSAGES } from '../constants/errorMessages.js';
 

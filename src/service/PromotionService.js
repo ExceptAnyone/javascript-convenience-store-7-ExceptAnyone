@@ -2,7 +2,7 @@
 
 import fileReader from '../fileReader/fileReader.js';
 import Promotion from '../model/Promotion.js';
-import inputView from '../views/inputView/InputView.js';
+import inputView from '../views/inputView/inputView.js';
 import { ERROR_MESSAGES } from '../constants/errorMessages.js';
 
 class PromotionService {

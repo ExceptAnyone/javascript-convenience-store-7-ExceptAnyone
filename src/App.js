@@ -1,7 +1,7 @@
 //@ts-check
 
 import PurchaseController from './controller/PurchaseController.js';
-import outputView from './views/outputView/OutputView.js';
+import outputView from './views/outputView/outputView.js';
 
 class App {
   #purchaseController;

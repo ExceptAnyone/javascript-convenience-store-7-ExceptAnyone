@@ -2,8 +2,8 @@
 
 import { GAME_MESSAGES } from '../constants/gameMessages.js';
 import PurchaseService from '../service/PurchaseService.js';
-import inputView from '../views/inputView/InputView.js';
-import outputView from '../views/outputView/OutputView.js';
+import inputView from '../views/inputView/inputView.js';
+import outputView from '../views/outputView/outputView.js';
 import MembershipService from '../service/MembershipService.js';
 import Validator from '../validator/Validator.js';
 

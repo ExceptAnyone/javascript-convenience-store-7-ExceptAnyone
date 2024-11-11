@@ -1,7 +1,7 @@
 import PurchaseService from '../../src/service/PurchaseService.js';
 import fileReader from '../../src/fileReader/fileReader.js';
 import { DateTimes } from '@woowacourse/mission-utils';
-import inputView from '../../src/views/inputView/InputView.js';
+import inputView from '../../src/views/inputView/inputView.js';
 import { ERROR_MESSAGES } from '../../src/constants/errorMessages.js';
 
 jest.mock('../../src/fileReader/fileReader', () => ({
