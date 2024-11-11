@@ -45,34 +45,55 @@ class PurchaseService {
   }
 
   async #processPurchaseItems(purchaseList) {
-    const purchaseItems = [];
-    let nonPromotionTotal = 0;
+    const processedItems = await Promise.all(
+      purchaseList.map((item) => this.#processAndCreatePurchaseItem(item))
+    );
 
-    for (const purchaseItem of purchaseList) {
-      const { purchaseItem: processedItem, itemPrice } =
-        await this.#processAndCreatePurchaseItem(purchaseItem);
+    return this.#aggregatePurchaseResults(processedItems);
+  }
 
-      purchaseItems.push(processedItem);
-      if (!processedItem.hasPromotion) nonPromotionTotal += itemPrice;
-    }
+  #aggregatePurchaseResults(processedItems) {
+    return processedItems.reduce(
+      (result, { purchaseItem, itemPrice }) => ({
+        purchaseItems: [...result.purchaseItems, purchaseItem],
+        nonPromotionTotal: this.#calculateNonPromotionTotal(
+          result.nonPromotionTotal,
+          purchaseItem,
+          itemPrice
+        ),
+      }),
+      { purchaseItems: [], nonPromotionTotal: 0 }
+    );
+  }
 
-    return { purchaseItems, nonPromotionTotal };
+  #calculateNonPromotionTotal(currentTotal, purchaseItem, itemPrice) {
+    return purchaseItem.hasPromotion ? currentTotal : currentTotal + itemPrice;
   }
 
   async #processAndCreatePurchaseItem({ name, quantity }) {
-    const { product, quantity: updatedQuantity } =
-      await this.#processSinglePurchase(name, quantity);
+    const purchaseInfo = await this.#processSinglePurchase(name, quantity);
+    return this.#createPurchaseItemResult(purchaseInfo, quantity);
+  }
 
-    const itemPrice = this.#productService.calculatePrice(product, quantity);
+  #createPurchaseItemResult(purchaseInfo, quantity) {
+    const itemPrice = this.#productService.calculatePrice(
+      purchaseInfo.product,
+      quantity
+    );
 
-    const purchaseItem = {
-      name,
-      quantity: updatedQuantity,
-      price: itemPrice,
-      hasPromotion: product.hasPromotion(),
+    return {
+      purchaseItem: this.#createPurchaseItem(purchaseInfo, itemPrice),
+      itemPrice,
     };
+  }
 
-    return { purchaseItem, itemPrice };
+  #createPurchaseItem(purchaseInfo, itemPrice) {
+    return {
+      name: purchaseInfo.product.name,
+      quantity: purchaseInfo.quantity,
+      price: itemPrice,
+      hasPromotion: purchaseInfo.product.hasPromotion(),
+    };
   }
 
   #createPurchaseResult(purchaseItems, nonPromotionTotal) {
@@ -215,11 +236,27 @@ class PurchaseService {
   }
 
   #calculatePromotionQuantities(product, promotionProduct, quantity) {
-    const promotion = this.#promotionService.findPromotion(product.promotion);
-    if (!promotion) {
-      return { promotionQuantity: 0, remainingQuantity: quantity };
+    if (!this.#hasValidPromotion(product)) {
+      return this.#createNonPromotionQuantities(quantity);
     }
+    return this.#calculateValidPromotionQuantities(
+      product,
+      promotionProduct,
+      quantity
+    );
+  }
 
+  #hasValidPromotion(product) {
+    const promotion = this.#promotionService.findPromotion(product.promotion);
+    return promotion !== null;
+  }
+
+  #createNonPromotionQuantities(quantity) {
+    return { promotionQuantity: 0, remainingQuantity: quantity };
+  }
+
+  #calculateValidPromotionQuantities(product, promotionProduct, quantity) {
+    const promotion = this.#promotionService.findPromotion(product.promotion);
     const maxPromotionSets = Math.floor(
       promotionProduct.quantity / promotion.buy
     );
@@ -227,9 +264,11 @@ class PurchaseService {
       maxPromotionSets * promotion.buy,
       quantity
     );
-    const remainingQuantity = quantity - promotionQuantity;
 
-    return { promotionQuantity, remainingQuantity };
+    return {
+      promotionQuantity,
+      remainingQuantity: quantity - promotionQuantity,
+    };
   }
 
   async #updatePromotionStock(name, promotionQuantity, remainingQuantity) {
