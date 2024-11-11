@@ -98,6 +98,15 @@ const run = async ({
 const INPUTS_TO_TERMINATE = ['[비타민워터-1]', 'N', 'N'];
 
 describe('편의점', () => {
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2024-01-15'));
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
