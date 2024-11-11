@@ -16,11 +16,29 @@ class Product {
   }
 
   toString() {
-    const stockStatus = this.hasStock() ? `${this.quantity}개` : '재고 없음';
-    const promotionText = this.hasPromotion() ? ` ${this.promotion}` : '';
-    return `- ${
-      this.name
-    } ${this.price.toLocaleString()}원 ${stockStatus}${promotionText}`;
+    const price = this.#formatPrice();
+    const quantity = this.#formatQuantity();
+    const promotion = this.#formatPromotion();
+
+    return `- ${this.name} ${price} ${quantity}${promotion}`;
+  }
+
+  #formatPrice() {
+    return `${this.price.toLocaleString()}원`;
+  }
+
+  #formatQuantity() {
+    if (!this.hasStock()) {
+      return '재고 없음';
+    }
+    return `${this.quantity}개`;
+  }
+
+  #formatPromotion() {
+    if (!this.promotion) {
+      return '';
+    }
+    return ` ${this.promotion}`;
   }
 }
 
