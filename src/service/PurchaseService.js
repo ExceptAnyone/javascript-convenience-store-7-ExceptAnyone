@@ -135,12 +135,32 @@ class PurchaseService {
 
   async #calculatePromotionQuantity(product, quantity) {
     const promotion = this.#promotionService.findPromotion(product.promotion);
-    if (quantity >= promotion.calculateSetSize()) return quantity;
+    if (this.#isFullSetQuantity(promotion, quantity)) {
+      return quantity;
+    }
+    return await this.#determinePromotionQuantity({
+      product,
+      promotion,
+      quantity,
+    });
+  }
 
+  #isFullSetQuantity(promotion, quantity) {
+    return quantity >= promotion.calculateSetSize();
+  }
+
+  async #determinePromotionQuantity(purchaseInfo) {
     const shouldAdd = await this.#promotionService.showAdditionalItemMessage(
-      product.name
+      purchaseInfo.product.name
     );
-    return shouldAdd ? promotion.calculateSetSize() : quantity;
+    return this.#getFinalQuantity(shouldAdd, purchaseInfo);
+  }
+
+  #getFinalQuantity(shouldAdd, purchaseInfo) {
+    if (!shouldAdd) {
+      return purchaseInfo.quantity;
+    }
+    return purchaseInfo.promotion.calculateSetSize();
   }
 
   #handlePromotionError(error, quantity) {
